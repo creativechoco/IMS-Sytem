@@ -31,7 +31,14 @@ const Landing = () => {
     setError('')
 
     if (activeTab === 'admin') {
-      setError('Admin login coming soon. Please use the admin tab later.')
+      if (!adminForm.email.trim() || !adminForm.password.trim()) {
+        setError('Please provide your admin email and password.')
+        return
+      }
+      // TODO: replace with real admin auth once backend endpoint is live
+      localStorage.setItem('adminToken', 'stub-admin-token')
+      localStorage.setItem('adminName', adminForm.email.split('@')[0] || 'Administrator')
+      navigate('/admin/dashboard')
       return
     }
 
@@ -79,7 +86,7 @@ const Landing = () => {
                 <img src="/bfar-logo.png" alt="BFAR XII" loading="lazy" decoding="async" />
               </div>
               <h1 className="modal-title">Welcome!</h1>
-              <p className="modal-sub">BFAR XII · ID Card Generator System</p>
+              <p className="modal-sub">BFAR 12-IMS · Identity Management System</p>
             </div>
 
             <div className="tab-bar">
