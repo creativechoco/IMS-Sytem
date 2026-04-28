@@ -64,6 +64,11 @@ const Landing = () => {
       if (response.success) {
         localStorage.setItem('employeeToken', response.token)
         localStorage.setItem('employeeName', response.user.full_name)
+        if (response.employee) {
+          localStorage.setItem('employeeProfile', JSON.stringify(response.employee))
+        } else {
+          localStorage.removeItem('employeeProfile')
+        }
         navigate('/employee/id-generator')
       } else {
         setShowFailModal(true)
@@ -87,7 +92,7 @@ const Landing = () => {
             <img src="/gad-logo.jpg" alt="GAD" loading="lazy" decoding="async" />
           </div>
           <p className="hero-suptitle">Department of Agriculture</p>
-          <h1 className="hero-title">Bureau of Fisheries and Aquatic Resources Region XII</h1>
+          <h1 className="hero-title1">Bureau of Fisheries and Aquatic Resources Region XII</h1>
         </header>
 
         <div className="modal-wrapper">

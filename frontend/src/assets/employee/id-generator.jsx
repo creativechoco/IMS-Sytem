@@ -1,13 +1,15 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { IDCardFront, IDCardBack } from '../components/id-preview'
-import { createEmployee } from '../../services/employees'
+import { createEmployee, updateEmployee } from '../../services/employees'
+
 import './id-generator.css'
 import Cropper from 'react-easy-crop'
 
 const BLOOD_TYPES = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-']
 
 const defaultForm = {
+
   /* Identity */
   id_number: '',
   first_name: '',
@@ -43,8 +45,24 @@ const defaultForm = {
 }
 
 function seedFromLocal() {
+  const storedProfile = localStorage.getItem('employeeProfile')
+  if (storedProfile) {
+    try {
+      const profile = JSON.parse(storedProfile)
+      return {
+        ...defaultForm,
+        ...profile,
+        photoPreview: profile.photo_url || null,
+        signaturePreview: profile.signature_url || null,
+      }
+    } catch (err) {
+      localStorage.removeItem('employeeProfile')
+    }
+  }
+
   const stored = localStorage.getItem('employeeName') || ''
   if (!stored) return defaultForm
+
   /* Expected formats: "LASTNAME, FIRST M." or "First Last" */
   const parts = stored.split(',').map((s) => s.trim())
   if (parts.length === 2) {
@@ -68,6 +86,17 @@ function seedFromLocal() {
 function EmployeeIdGenerator() {
   const navigate = useNavigate()
   const [form, setForm] = useState(seedFromLocal)
+  const [employeeId, setEmployeeId] = useState(() => {
+    const profile = localStorage.getItem('employeeProfile')
+    if (!profile) return null
+    try {
+      const parsed = JSON.parse(profile)
+      return parsed?.id || null
+    } catch (err) {
+      return null
+    }
+  })
+
   const [activeSide, setActiveSide] = useState('front')
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
@@ -311,10 +340,10 @@ function EmployeeIdGenerator() {
     ]
 
     const missing = requiredFields.filter((field) => !form[field]?.toString().trim())
-    if (!form.photo) {
+    if (!form.photo && !form.photoPreview) {
       missing.push('photo')
     }
-    if (!form.signature) {
+    if (!form.signature && !form.signaturePreview) {
       missing.push('signature')
     }
 
@@ -330,21 +359,44 @@ function EmployeeIdGenerator() {
     setSuccess('')
     setSaving(true)
 
-    createEmployee(form)
+    const saveAction = employeeId ? updateEmployee(employeeId, form) : createEmployee(form)
+
+    saveAction
       .then((employee) => {
-        setSuccess('Your ID information has been successfully saved!')
-        setForm(defaultForm)
+        const nextProfile = {
+          ...form,
+          ...employee,
+          photo_url: employee?.photo_url || form.photoPreview || null,
+          signature_url: employee?.signature_url || form.signaturePreview || null,
+        }
+
+        setSuccess(employeeId ? 'Your ID information has been updated!' : 'Your ID information has been successfully saved!')
+        setForm({
+          ...defaultForm,
+          ...nextProfile,
+          photoPreview: nextProfile.photo_url || null,
+          signaturePreview: nextProfile.signature_url || null,
+          photo: null,
+          signature: null,
+        })
         setErrors({})
         if (fileRef.current) fileRef.current.value = ''
+        if (signatureRef.current) signatureRef.current.value = ''
 
-        // Optionally store returned name
-        if (employee?.last_name && employee?.first_name) {
-          localStorage.setItem('employeeName', `${employee.last_name}, ${employee.first_name}`)
+        // Persist name + profile for future sessions
+        if (nextProfile?.last_name && nextProfile?.first_name) {
+          localStorage.setItem('employeeName', `${nextProfile.last_name}, ${nextProfile.first_name}`)
         }
+        localStorage.setItem('employeeProfile', JSON.stringify({
+          id: nextProfile.id || employeeId,
+          ...nextProfile,
+        }))
+        if (employee?.id) setEmployeeId(employee.id)
       })
       .catch((err) => {
         setError(err?.message || 'Unable to save employee')
       })
+
       .finally(() => setSaving(false))
   }
 
@@ -353,7 +405,7 @@ function EmployeeIdGenerator() {
       <div className="id-bg" />
       <header className="id-header">
         <div>
-          <h1>Employee ID Encoding</h1>
+          <h1>Employee ID Form</h1>
           <p>Preview your front and back ID layout while filling out the official details.</p>
         </div>
         <div className="session-chip">

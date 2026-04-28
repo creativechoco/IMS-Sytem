@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { Search, Plus, Edit2, Trash2, Users, Download } from './icons'
+import { Search, Plus, Users, Download, Edit2, Trash2 } from './icons'
 
 /**
  * Employee listing table. Data is currently provided by the parent
@@ -21,22 +21,35 @@ function EmployeeList({
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase()
-    if (!q) return employees
-    return employees.filter((emp) => {
-      const haystack = [
-        emp.first_name,
-        emp.middle_name,
-        emp.last_name,
-        emp.id_number,
-        emp.position,
-        emp.department,
-        emp.contact_number,
-      ]
+    const list = employees.map((emp) => ({
+      ...emp,
+      _fullName: [emp.first_name, emp.middle_name ? `${emp.middle_name[0]}.` : '', emp.last_name]
         .filter(Boolean)
         .join(' ')
-        .toLowerCase()
-      return haystack.includes(q)
-    })
+        .trim(),
+    }))
+
+    const filteredList = !q
+      ? list
+      : list.filter((emp) => {
+          const haystack = [
+            emp.first_name,
+            emp.middle_name,
+            emp.last_name,
+            emp.id_number,
+            emp.position,
+            emp.department,
+            emp.contact_number,
+            emp.employment_status,
+            emp.type,
+          ]
+            .filter(Boolean)
+            .join(' ')
+            .toLowerCase()
+          return haystack.includes(q)
+        })
+
+    return [...filteredList].sort((a, b) => (a._fullName || '').localeCompare(b._fullName || ''))
   }, [employees, search])
 
   const openConfirm = (emp) => {
@@ -64,127 +77,128 @@ function EmployeeList({
     }
   }
 
+  const handleDelete = (emp) => {
+    openConfirm(emp)
+  }
+
   return (
-    <div className="emp-list">
-      <div className="list-toolbar">
-        <div className="list-title">
-          <Users size={20} />
-          <span>All Employees</span>
-          <span className="total-badge">{employees.length}</span>
+    <div className="emp-page">
+      <div className="emp-hero">
+        <div className="hero-copy">
+          <p className="eyebrow">Identity Management</p>
+          <h2 className="hero-title">Manage Employees ID's</h2>
+          <p className="hero-sub">Create, update, and organize identification records in one place.</p>
         </div>
-        <div className="list-actions">
+        <div className="hero-actions">
+          <button className="hero-btn hero-btn-outline" onClick={onNew}>
+            <Plus size={14} /> New Employee
+          </button>
           <button
-            className="btn-export"
+            className="hero-btn hero-btn-solid"
             onClick={onExportZip}
             disabled={exportingZip || employees.length === 0}
             title={employees.length === 0 ? 'No employees to export' : 'Download all IDs as ZIP'}
           >
-            <Download size={14} />
-            {exportingZip ? 'Exporting…' : 'Export ZIP'}
-          </button>
-          <div className="search-box">
-            <Search size={15} />
-            <input
-              type="text"
-              placeholder="Search employees…"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-            />
-          </div>
-          <button className="btn-new" onClick={onNew}>
-            <Plus size={15} />
-            New Employee
+            <Download size={14} /> {exportingZip ? 'Exporting…' : 'Export ZIP'}
           </button>
         </div>
       </div>
 
-      <div className="list-table-wrapper">
-        {loading ? (
-          <div className="list-loading">
-            <div className="loading-spinner" />
-            <span>Loading employees…</span>
+      <div className="emp-card">
+        <div className="table-toolbar">
+          <div className="table-controls">
+            <div className="search-wide">
+              <Search size={16} />
+              <input
+                type="text"
+                placeholder="Search employees"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+              />
+            </div>
           </div>
-        ) : filtered.length === 0 ? (
-          <div className="list-empty">
-            <Users size={40} />
-            <p>{employees.length === 0 ? 'No employees yet' : 'No matches found'}</p>
-            {employees.length === 0 && (
-              <button className="btn-new" onClick={onNew}>
-                <Plus size={14} /> Add First Employee
-              </button>
-            )}
-          </div>
-        ) : (
-          <table className="emp-table">
-            <thead>
-              <tr>
-                <th>Photo</th>
-                <th>ID Number</th>
-                <th>Full Name</th>
-                <th>Position</th>
-                <th>Department</th>
-                <th>Contact</th>
-                <th>Status</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.map((emp) => {
-                const initials = `${emp.first_name?.[0] || ''}${emp.last_name?.[0] || ''}`.toUpperCase()
-                const photoSrc = emp.photoPreview || emp.photo_url
-                return (
-                  <tr key={emp.id}>
-                    <td>
-                      <div className="table-photo">
-                        {photoSrc ? (
-                          <img src={photoSrc} alt={emp.first_name || 'Employee'} />
-                        ) : (
-                          <div className="table-photo-placeholder">{initials || '—'}</div>
-                        )}
-                      </div>
-                    </td>
-                    <td>
-                      <span className="id-chip">{emp.id_number || '—'}</span>
-                    </td>
-                    <td className="name-cell">
-                      {[emp.first_name, emp.middle_name ? `${emp.middle_name[0]}.` : '', emp.last_name]
-                        .filter(Boolean)
-                        .join(' ')}
-                    </td>
-                    <td>{emp.position || '—'}</td>
-                    <td>{emp.department || '—'}</td>
-                    <td>{emp.contact_number || '—'}</td>
-                    <td>
-                      <span className={`status-pill ${emp.status || 'active'}`}>
-                        {emp.status || 'active'}
-                      </span>
-                    </td>
-                    <td>
-                      <div className="table-actions">
-                        <button
-                          className="tbl-btn edit"
-                          onClick={() => onEdit?.(emp)}
-                          title="Edit"
-                        >
-                          <Edit2 size={13} />
-                        </button>
-                        <button
-                          className="tbl-btn delete"
-                          onClick={() => openConfirm(emp)}
-                          title="Delete"
-                        >
-                          <Trash2 size={13} />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                )
-              })}
-            </tbody>
-          </table>
-        )}
-      </div>
+        </div>
 
+        <div className="list-table-wrapper">
+          {loading ? (
+            <div className="list-loading">
+              <div className="loading-spinner" />
+              <span>Loading employees…</span>
+            </div>
+          ) : filtered.length === 0 ? (
+            <div className="list-empty">
+              <Users size={40} />
+              <p>{employees.length === 0 ? 'No one submitted ID yet' : 'No matches found'}</p>
+               
+            </div>
+          ) : (
+            <table className="emp-table modern">
+              <thead>
+                <tr>
+                  <th>Photo</th>
+                  <th>ID Number</th>
+                  <th>Full Name</th>
+                  <th>Position</th>
+                  <th>Department</th>
+                  <th>Contact</th>
+                  <th>Status</th>
+                  <th className="text-right actions-col">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filtered.map((emp) => {
+                  const initials = `${emp.first_name?.[0] || ''}${emp.last_name?.[0] || ''}`.toUpperCase()
+                  const photoSrc = emp.photoPreview || emp.photo_url
+                  const fullName = [
+                    emp.first_name,
+                    emp.middle_name ? `${emp.middle_name[0]}.` : '',
+                    emp.last_name,
+                  ]
+                    .filter(Boolean)
+                    .join(' ')
+                  const statusLabel = emp.status || '—'
+                  const isActive = statusLabel.toLowerCase() === 'active'
+                  return (
+                    <tr key={emp.id}>
+                      <td>
+                        <div className="emp-avatar">
+                          {photoSrc ? (
+                            <img src={photoSrc} alt={fullName || 'Employee'} />
+                          ) : (
+                            <div className="emp-avatar-placeholder">{initials || '—'}</div>
+                          )}
+                        </div>
+                      </td>
+                      <td>
+                        <span className="id-chip">{emp.id_number || '—'}</span>
+                      </td>
+                      <td>
+                        <div className="emp-name">{fullName || 'Unnamed'}</div>
+                      </td>
+                      <td className="muted">{emp.position || '—'}</td>
+                      <td className="muted">{emp.department || '—'}</td>
+                      <td className="muted">{emp.contact_number || '—'}</td>
+                      <td>
+                        <span className={`status-chip ${isActive ? 'is-active' : 'is-inactive'}`}>{statusLabel}</span>
+                      </td>
+                      <td className="text-right">
+                        <div className="table-actions">
+                          <button className="tbl-btn edit" onClick={() => onEdit?.(emp)} title="View / Edit">
+                            <Edit2 size={14} />
+                          </button>
+                          <button className="tbl-btn delete" onClick={() => handleDelete(emp)} title="Delete">
+                            <Trash2 size={14} />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          )}
+        </div>
+      </div>
       {confirmingEmp && (
         <div
           className="confirm-overlay"
