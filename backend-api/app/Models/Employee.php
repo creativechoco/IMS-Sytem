@@ -29,6 +29,7 @@ class Employee extends Model
         'emergency_contact',
         'emergency_relationship',
         'status',
+        'signature_url',
         'created_by',
     ];
 }

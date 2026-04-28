@@ -14,6 +14,8 @@ const BLOOD_TYPES = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-']
  *  - errors          : { [field]: 'Required' | '' }
  *  - onPhotoChange   : (file, dataUrl) => void
  *  - onRemovePhoto   : () => void
+ *  - onStartCrop     : file => void (photo crop)
+ *  - onStartSignatureCrop : file => void (signature crop)
  */
 function AddEmployeeForm({
   data,
@@ -21,16 +23,25 @@ function AddEmployeeForm({
   errors = {},
   onPhotoChange,
   onRemovePhoto,
+  onSignatureChange,
+  onRemoveSignature,
+  onStartCrop,
+  onStartSignatureCrop,
   resetSignal = 0,
 }) {
   const fileRef = useRef(null)
+  const signatureRef = useRef(null)
 
   const handlePhoto = (event) => {
     const file = event.target.files?.[0]
     if (!file) return
-    const reader = new FileReader()
-    reader.onload = (ev) => onPhotoChange?.(file, ev.target.result)
-    reader.readAsDataURL(file)
+    if (onStartCrop) {
+      onStartCrop(file)
+    } else {
+      const reader = new FileReader()
+      reader.onload = (ev) => onPhotoChange?.(file, ev.target.result)
+      reader.readAsDataURL(file)
+    }
   }
 
   const handleRemove = (e) => {
@@ -39,8 +50,28 @@ function AddEmployeeForm({
     if (fileRef.current) fileRef.current.value = ''
   }
 
+  const handleSignature = (event) => {
+    const file = event.target.files?.[0]
+    if (!file) return
+    if (onStartSignatureCrop) {
+      onStartSignatureCrop(file)
+    } else {
+      console.warn('Signature crop handler not provided; falling back to raw upload')
+      const reader = new FileReader()
+      reader.onload = (ev) => onSignatureChange?.(file, ev.target.result)
+      reader.readAsDataURL(file)
+    }
+  }
+
+  const handleRemoveSignature = (e) => {
+    e.stopPropagation()
+    onRemoveSignature?.()
+    if (signatureRef.current) signatureRef.current.value = ''
+  }
+
   useEffect(() => {
     if (fileRef.current) fileRef.current.value = ''
+    if (signatureRef.current) signatureRef.current.value = ''
   }, [resetSignal])
 
   const cls = (field) => (errors[field] ? 'has-error' : '')
@@ -83,6 +114,8 @@ function AddEmployeeForm({
           onChange={handlePhoto}
         />
       </div>
+
+      
 
       {/* ── Personal Information ── */}
       <div className="form-section">
@@ -284,6 +317,46 @@ function AddEmployeeForm({
           </label>
         </div>
       </div>
+
+      {/* ── Signature Upload ── */}
+      <div className="form-section">
+        <div className="section-header">Signature</div>
+        <div className="signature-upload">
+          <div
+            className={`signature-upload-area ${errors.signature ? 'has-error' : ''}`}
+            onClick={() => !data.signaturePreview && signatureRef.current?.click()}
+            role="button"
+            tabIndex={0}
+          >
+            {data.signaturePreview ? (
+              <div className="signature-preview-box">
+                <img src={data.signaturePreview} alt="Signature preview" />
+                <button
+                  type="button"
+                  className="remove-photo-btn"
+                  onClick={handleRemoveSignature}
+                  aria-label="Remove signature"
+                >
+                  ×
+                </button>
+              </div>
+            ) : (
+              <div className="photo-placeholder">
+                <span className="upload-glyph">✍</span>
+                <span>Upload signature</span>
+                <span className="photo-hint">PNG/JPG, light background</span>
+              </div>
+            )}
+          </div>
+          <input
+            ref={signatureRef}
+            type="file"
+            accept="image/*"
+            style={{ display: 'none' }}
+            onChange={handleSignature}
+          />
+        </div>
+      </div>
     </div>
   )
 }
@@ -297,7 +370,6 @@ export const REQUIRED_FIELDS = [
   'department',
   'home_address',
   'contact_number',
-  'blood_type',
   'date_of_birth',
   'sss_number',
   'pagibig_number',
@@ -306,6 +378,7 @@ export const REQUIRED_FIELDS = [
   'emergency_name',
   'emergency_contact',
   'emergency_relationship',
+  'signature',
 ]
 
 export const EMPTY_EMPLOYEE = {
@@ -329,6 +402,8 @@ export const EMPTY_EMPLOYEE = {
   status: 'active',
   photo: null,
   photoPreview: null,
+  signature: null,
+  signaturePreview: null,
 }
 
 export default AddEmployeeForm

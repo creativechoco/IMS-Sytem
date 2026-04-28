@@ -35,6 +35,7 @@ const TopRibbon = () => (
   <img
     src={TOP_RIBBON_IMG}
     alt=""
+    crossOrigin="anonymous"
     style={{
       position: 'absolute',
       top: 0,
@@ -52,6 +53,7 @@ const BottomRibbon = () => (
   <img
     src={BOTTOM_RIBBON_IMG}
     alt=""
+    crossOrigin="anonymous"
     style={{
       position: 'absolute',
       bottom: 0,
@@ -88,14 +90,25 @@ const BFARSeal = ({ size = 70 }) => (
 
 const Logo = ({ src, size = 70 }) => {
   const imgSrc = src || DEFAULT_LOGO_IMG
-  return imgSrc ? (
-    <img
-      src={imgSrc}
-      alt="Logo"
-      style={{ width: size, height: size, objectFit: 'contain', display: 'block' }}
-    />
-  ) : (
-    <BFARSeal size={size} />
+  if (!imgSrc) return <BFARSeal size={size} />
+
+  return (
+    <div
+      style={{
+        width: size,
+        height: size,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+      }}
+    >
+      <img
+        src={imgSrc}
+        alt="Logo"
+        crossOrigin="anonymous"
+        style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain', display: 'block' }}
+      />
+    </div>
   )
 }
 
@@ -103,12 +116,13 @@ const Logo = ({ src, size = 70 }) => {
    FRONT CARD
    ═════════════════════════════════════════════ */
 export const IDCardFront = forwardRef(function IDCardFront({ data = {}, companyLogo }, ref) {
-  const firstName = data.first_name || 'NAME'
+  const firstName = data.first_name || 'FIRSTNAME'
   const middleInit = data.middle_name ? data.middle_name[0].toUpperCase() + '.' : 'P.'
   const lastName = (data.last_name || 'LASTNAME').toUpperCase()
   const nameLine1 = `${firstName.toUpperCase()} ${middleInit}`
   const idNumber = data.id_number || ''
-  const designation = data.position || 'Designation'
+  const designation = data.position || 'DESIGNATION'
+  const signatureSrc = data.signaturePreview || data.signature_url || null
 
   return (
     <div
@@ -137,7 +151,7 @@ export const IDCardFront = forwardRef(function IDCardFront({ data = {}, companyL
           display: 'flex',
           alignItems: 'flex-start',
           gap: '10px',
-          padding: '12px 14px 0 14px',
+          padding: '23px 14px 0 14px',
           marginTop: '8px',
           marginLeft: '16px',
         }}
@@ -146,13 +160,13 @@ export const IDCardFront = forwardRef(function IDCardFront({ data = {}, companyL
           <Logo src={companyLogo} size={70} />
         </div>
 
-        <div style={{ flex: 1, paddingTop: '8px' }}>
+        <div style={{ flex: 1, paddingTop: '9px' }}>
           <div style={{ fontSize: '10px', color: '#333', lineHeight: 1, fontFamily: 'Calibri,sans-serif' }}>
             Republic of the Philippines
           </div>
           <div
             style={{
-              fontSize: '10px',
+              fontSize: '11px',
               fontWeight: 700,
               color: '#333',
               lineHeight: 1,
@@ -163,10 +177,10 @@ export const IDCardFront = forwardRef(function IDCardFront({ data = {}, companyL
           </div>
           <div
             style={{
-              fontSize: '12px',
+              fontSize: '14px',
               fontWeight: 900,
               color: '#111',
-              lineHeight: 1.2,
+              lineHeight: 0.8,
               fontFamily: 'Calibri,sans-serif',
               marginTop: '2px',
             }}
@@ -177,7 +191,7 @@ export const IDCardFront = forwardRef(function IDCardFront({ data = {}, companyL
           </div>
           <div
             style={{
-              fontSize: '7px',
+              fontSize: '7.5px',
               color: '#444',
               marginTop: '0px',
               lineHeight: 1.55,
@@ -209,6 +223,7 @@ export const IDCardFront = forwardRef(function IDCardFront({ data = {}, companyL
         <img
           src={data.photoPreview || PLACEHOLDER_PHOTO}
           alt="Employee 2x2"
+          crossOrigin="anonymous"
           style={{
             width: '100%',
             height: '100%',
@@ -226,21 +241,21 @@ export const IDCardFront = forwardRef(function IDCardFront({ data = {}, companyL
           zIndex: 2,
           textAlign: 'center',
           marginTop: '9px',
-          fontSize: '12px',
+          fontSize: '13px',
           fontWeight: 700,
           color: '#111',
           fontFamily: 'Calibri,sans-serif',
           letterSpacing: '0.05em',
         }}
       >
-        {idNumber ? `ID No. ${idNumber}` : 'ID No.'}
+        {idNumber ? `ID No.: ${idNumber}` : 'ID No.: '}
       </div>
 
       {/* FULL NAME */}
       <div style={{ position: 'relative', zIndex: 2, textAlign: 'center', padding: '0 10px', marginTop: '3px' }}>
         <div
           style={{
-            fontSize: '30px',
+            fontSize: '31px',
             fontWeight: 900,
             color: '#1a6b2a',
             lineHeight: 1.1,
@@ -253,7 +268,7 @@ export const IDCardFront = forwardRef(function IDCardFront({ data = {}, companyL
         </div>
         <div
           style={{
-            fontSize: '26px',
+            fontSize: '31px',
             fontWeight: 900,
             color: '#1a6b2a',
             lineHeight: 1.1,
@@ -273,7 +288,7 @@ export const IDCardFront = forwardRef(function IDCardFront({ data = {}, companyL
           zIndex: 2,
           textAlign: 'center',
           marginTop: '5px',
-          fontSize: '11.5px',
+          fontSize: '12.5px',
           fontWeight: 600,
           color: '#222',
           fontFamily: 'Calibri,sans-serif',
@@ -287,16 +302,34 @@ export const IDCardFront = forwardRef(function IDCardFront({ data = {}, companyL
         style={{
           position: 'relative',
           zIndex: 2,
-          margin: '40px 50px 0 50px',
+          margin: '30px 50px 0 50px',
           borderTop: '1.5px solid #333',
+          minHeight: '55px',
         }}
-      />
+      >
+        {signatureSrc && (
+          <img
+            src={signatureSrc}
+            alt="Signature"
+            style={{
+              position: 'absolute',
+              top: '-35px',
+              left: '50%',
+              transform: 'translateX(-50%)',
+              maxWidth: '160px',
+              maxHeight: '50px',
+              objectFit: 'contain',
+              pointerEvents: 'none',
+            }}
+          />
+        )}
+      </div>
       <div
         style={{
           position: 'relative',
           zIndex: 2,
           textAlign: 'center',
-          marginTop: '4px',
+          marginTop: '-46px',
           fontSize: '10px',
           fontStyle: 'italic',
           color: '#444',
@@ -310,14 +343,14 @@ export const IDCardFront = forwardRef(function IDCardFront({ data = {}, companyL
 })
 
 /* ═════════════════════════════════════════════
-   BACK CARD
+   BACK CARD 
    ═════════════════════════════════════════════ */
 export const IDCardBack = forwardRef(function IDCardBack({ data = {} }, ref) {
   const Row = ({ label, value }) => (
-    <div style={{ display: 'flex', marginBottom: '6px', lineHeight: 1.4 }}>
+    <div style={{ display: 'flex', lineHeight: 1.4 }}>
       <span
         style={{
-          fontSize: '10px',
+          fontSize: '12.5px',
           fontWeight: 800,
           color: '#111',
           fontFamily: 'Calibri,sans-serif',
@@ -329,7 +362,7 @@ export const IDCardBack = forwardRef(function IDCardBack({ data = {} }, ref) {
       </span>
       <span
         style={{
-          fontSize: '9px',
+          fontSize: '11.5px',
           color: '#222',
           fontFamily: 'Calibri,sans-serif',
           flex: 1,
@@ -366,14 +399,14 @@ export const IDCardBack = forwardRef(function IDCardBack({ data = {} }, ref) {
         style={{
           position: 'relative',
           zIndex: 2,
-          padding: '12px 18px 0 18px',
+          padding: '30px 18px 0 18px',
           marginTop: '16px',
           marginLeft: '20px',
         }}
       >
         <div
           style={{
-            fontSize: '9px',
+            fontSize: '11.5px',
             fontWeight: 900,
             color: '#1a6b2a',
             letterSpacing: '0.07em',
@@ -387,7 +420,7 @@ export const IDCardBack = forwardRef(function IDCardBack({ data = {} }, ref) {
           style={{
             minHeight: '13px',
             marginBottom: '3px',
-            fontSize: '10px',
+            fontSize: '11.5px',
             color: '#222',
             fontFamily: 'Calibri,sans-serif',
             paddingBottom: '1px',
@@ -407,6 +440,7 @@ export const IDCardBack = forwardRef(function IDCardBack({ data = {} }, ref) {
           border: '1.5px solid #d4a017',
           borderRadius: '2px',
           padding: '10px 12px 8px 12px',
+          fontSize: '11.5px', // slightly larger for better legibility
         }}
       >
         <Row label="CONTACT NUMBER:" value={data.contact_number} />
@@ -420,12 +454,13 @@ export const IDCardBack = forwardRef(function IDCardBack({ data = {} }, ref) {
 
         <div
           style={{
-            fontSize: '8.5px',
+            fontSize: '12.5px',
             fontWeight: 900,
             color: '#1a6b2a',
             letterSpacing: '0.04em',
             margin: '6px 0 6px 0',
             fontFamily: 'Calibri,sans-serif',
+            textAlign: 'center',
           }}
         >
           PERSON TO CONTACT IN CASE OF EMERGENCY
@@ -434,10 +469,12 @@ export const IDCardBack = forwardRef(function IDCardBack({ data = {} }, ref) {
           style={{
             minHeight: '13px',
             marginBottom: '5px',
-            fontSize: '8.5px',
+            fontSize: '10px',
             color: '#222',
             fontFamily: 'Calibri,sans-serif',
             paddingBottom: '1px',
+            textAlign: 'center',
+            fontWeight: 700,
           }}
         >
           {data.emergency_name
@@ -448,10 +485,11 @@ export const IDCardBack = forwardRef(function IDCardBack({ data = {} }, ref) {
           style={{
             minHeight: '13px',
             marginBottom: '2px',
-            fontSize: '8.5px',
+            fontSize: '9.5px',
             color: '#222',
             fontFamily: 'Calibri,sans-serif',
             paddingBottom: '1px',
+            textAlign: 'center',
           }}
         >
           {data.emergency_contact || ''}
@@ -465,7 +503,7 @@ export const IDCardBack = forwardRef(function IDCardBack({ data = {} }, ref) {
           zIndex: 2,
           margin: '20px 16px 0 16px',
           textAlign: 'center',
-          fontSize: '10px',
+          fontSize: '11.19px',
           color: '#222',
           lineHeight: 1.2,
           fontFamily: 'Calibri,sans-serif',
@@ -473,33 +511,43 @@ export const IDCardBack = forwardRef(function IDCardBack({ data = {} }, ref) {
       >
         This is to certify that the person whose picture and signature
         <br />
-        appear hereof is a bona fide employee of the
+        appear hereof is a bona fide Job Order/Contract of Service of the
         <br />
-        <strong style={{ fontSize: '10px' }}>Bureau of Fisheries and Aquatic Resources XII</strong>
+        <strong style={{ fontSize: '11.2px' }}>Bureau of Fisheries and Aquatic Resources XII</strong>
       </div>
 
       {/* DIRECTOR */}
       <div style={{ position: 'relative', zIndex: 2, textAlign: 'center', marginTop: '40px' }}>
+        <div style={{ marginBottom: '-24px' }}>
+          <img
+            src="/Director_signature.png"
+            alt="Director signature"
+            crossOrigin="anonymous"
+            style={{ maxWidth: '140px', maxHeight: '50px', objectFit: 'contain' }}
+          />
+        </div>
         <div
           style={{
-            fontSize: '10.5px',
+            fontSize: '14px',
             fontWeight: 900,
             color: '#111',
             letterSpacing: '0.03em',
             fontFamily: 'Calibri,sans-serif',
+            
           }}
         >
           EUGENE M. CASAS
         </div>
         <div
           style={{
-            fontSize: '8px',
+            fontSize: '11px',
             color: '#333',
             fontFamily: 'Calibri,sans-serif',
             marginTop: '1px',
+            fontStyle: 'italic',
           }}
         >
-          Officer-in-charge, Regional Director
+          Officer-in-Charge, Regional Director
         </div>
       </div>
     </div>

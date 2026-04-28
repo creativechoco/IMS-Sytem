@@ -244,8 +244,102 @@
   display: flex;
   justify-content: center;
   align-items: flex-start;
-  padding: 24px 12px;
-  min-height: 520px;
+  --preview-scale: 1.35;
+  padding: 32px 18px;
+  min-height: 680px;
+}
+
+.cropper-overlay {
+  position: fixed;
+  inset: 0;
+  background: radial-gradient(circle at 30% 20%, rgba(43, 100, 214, 0.22), transparent 45%),
+    radial-gradient(circle at 80% 70%, rgba(31, 65, 140, 0.25), transparent 40%),
+    rgba(6, 12, 26, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 200;
+  backdrop-filter: blur(6px);
+  padding: 18px;
+}
+
+.cropper-dialog {
+  width: min(560px, 96vw);
+  background: linear-gradient(160deg, #f9fbff 0%, #f1f5ff 60%, #e9f0ff 100%);
+  border-radius: 24px;
+  border: 1px solid rgba(165, 185, 216, 0.7);
+  box-shadow: 0 28px 60px rgba(18, 34, 66, 0.28);
+  padding: 18px 18px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.cropper-dialog h3 {
+  margin: 0;
+  font-size: 18px;
+  letter-spacing: 0.05em;
+  color: #1b2b45;
+}
+
+.cropper-hint {
+  margin: 2px 0 6px;
+  color: #44526a;
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.cropper-stage {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  border-radius: 18px;
+  overflow: hidden;
+  background: radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.06), rgba(15, 23, 42, 0.96));
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.06);
+}
+
+.cropper-controls {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-top: 6px;
+}
+
+.cropper-controls label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 13px;
+  color: #1f2f48;
+  letter-spacing: 0.02em;
+}
+
+.cropper-controls input[type='range'] {
+  accent-color: #2b64d6;
+}
+
+.cropper-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+.cropper-actions .ghost,
+.cropper-actions .primary {
+  min-width: 110px;
+  border-radius: 12px;
+  height: 38px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+.id-canvas .bfar-id-card {
+  transform: scale(var(--preview-scale));
+  transform-origin: top center;
+  transition: transform 0.18s ease, box-shadow 0.2s ease;
 }
 
 .preview-panel {
@@ -256,9 +350,16 @@
 
 /* Make the form panel scroll independently on wide layouts */
 .form-panel {
-  max-height: calc(100vh - 220px);
-  overflow-y: auto;
   padding-right: 6px;
+  min-height: 100%;
+}
+
+/* Constrain only on short viewports to allow independent scrolling */
+@media (max-height: 900px) {
+  .form-panel {
+    max-height: calc(100vh - 220px);
+    overflow-y: auto;
+  }
 }
 
 /* Relax scrolling on narrow screens */
@@ -267,6 +368,11 @@
     max-height: none;
     overflow: visible;
     padding-right: 0;
+  }
+
+  .id-canvas {
+    --preview-scale: 1.18;
+    min-height: 600px;
   }
 }
 
@@ -302,6 +408,36 @@
 .photo-upload-section {
   display: flex;
   justify-content: center;
+}
+
+/* ── Signature upload ── */
+.signature-upload {
+  display: flex;
+  justify-content: center;
+}
+
+.signature-upload-area {
+  width: 260px;
+  height: 140px;
+  max-width: 100%;
+  border-radius: 18px;
+  border: 2px dashed rgba(120, 150, 200, 0.55);
+  background: rgba(255, 255, 255, 0.95);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: border-color 0.2s ease, background 0.2s ease;
+}
+
+.signature-upload-area.has-error {
+  border-color: rgba(220, 78, 78, 0.9);
+  box-shadow: 0 0 0 3px rgba(220, 78, 78, 0.2);
+}
+
+.signature-upload-area:hover {
+  border-color: rgba(78, 124, 210, 0.9);
+  background: rgba(238, 244, 255, 0.9);
 }
 
 .photo-upload-area {
@@ -347,6 +483,24 @@
   font-size: 11px;
   color: rgba(80, 104, 140, 0.6);
   letter-spacing: 0.02em;
+}
+
+/* Signature preview box mirrors photo sizing but thinner */
+.signature-preview-box {
+  position: relative;
+  width: 180px;
+  height: 90px;
+  border-radius: 12px;
+  overflow: hidden;
+  border: 2px solid rgba(120, 150, 200, 0.55);
+  background: #fff;
+}
+
+.signature-preview-box img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
 }
 
 .photo-preview-box {
@@ -640,5 +794,10 @@
 
   .form-grid label.full {
     grid-column: span 1;
+  }
+
+  .id-canvas {
+    --preview-scale: 1.08;
+    min-height: 560px;
   }
 }

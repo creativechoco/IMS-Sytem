@@ -5,46 +5,23 @@ import { jsPDF } from 'jspdf'
 const CAPTURE_OPTS = {
   scale: 3,
   useCORS: true,
-  allowTaint: true,
+  allowTaint: false,
   backgroundColor: '#ffffff',
   logging: false,
 }
 
 const safeName = (name) => (name || 'employee-id').replace(/\s+/g, '_')
 
+const CARD_W_MM = 86.36 // 3.4 in → mm
+const CARD_H_MM = 134.62 // 5.3 in → mm
+const MARGIN = 8 // mm
+
 async function capture(node) {
   if (!node) throw new Error('Preview not ready')
   return html2canvas(node, CAPTURE_OPTS)
 }
 
-export async function downloadIdPNG(frontEl, backEl, fileName) {
-  const [frontCanvas, backCanvas] = await Promise.all([capture(frontEl), capture(backEl)])
-
-  const GAP = 30
-  const MARGIN_Y = 20
-  const combined = document.createElement('canvas')
-  combined.width = frontCanvas.width + backCanvas.width + GAP
-  combined.height = Math.max(frontCanvas.height, backCanvas.height) + MARGIN_Y * 2
-
-  const ctx = combined.getContext('2d')
-  ctx.fillStyle = '#e8edf2'
-  ctx.fillRect(0, 0, combined.width, combined.height)
-  ctx.drawImage(frontCanvas, 0, MARGIN_Y)
-  ctx.drawImage(backCanvas, frontCanvas.width + GAP, MARGIN_Y)
-
-  const link = document.createElement('a')
-  link.download = `${safeName(fileName)}-ID.png`
-  link.href = combined.toDataURL('image/png', 1.0)
-  link.click()
-}
-
-export async function downloadIdPDF(frontEl, backEl, fileName) {
-  const [frontCanvas, backCanvas] = await Promise.all([capture(frontEl), capture(backEl)])
-
-  const CARD_W_MM = 86.36 // 3.4 in → mm
-  const CARD_H_MM = 134.62 // 5.3 in → mm
-  const MARGIN = 8 // mm
-
+function createPdfDoc(frontCanvas, backCanvas) {
   // Two cards side by side on one page
   const pageW = CARD_W_MM * 2 + MARGIN * 3
   const pageH = CARD_H_MM + MARGIN * 2
@@ -85,5 +62,38 @@ export async function downloadIdPDF(frontEl, backEl, fileName) {
   drawMark(bx - 4, MARGIN + CARD_H_MM + 4, 1, -1)
   drawMark(bx + CARD_W_MM + 4, MARGIN + CARD_H_MM + 4, -1, -1)
 
+  return pdf
+}
+
+export async function downloadIdPNG(frontEl, backEl, fileName) {
+  const [frontCanvas, backCanvas] = await Promise.all([capture(frontEl), capture(backEl)])
+
+  const GAP = 30
+  const MARGIN_Y = 20
+  const combined = document.createElement('canvas')
+  combined.width = frontCanvas.width + backCanvas.width + GAP
+  combined.height = Math.max(frontCanvas.height, backCanvas.height) + MARGIN_Y * 2
+
+  const ctx = combined.getContext('2d')
+  ctx.fillStyle = '#e8edf2'
+  ctx.fillRect(0, 0, combined.width, combined.height)
+  ctx.drawImage(frontCanvas, 0, MARGIN_Y)
+  ctx.drawImage(backCanvas, frontCanvas.width + GAP, MARGIN_Y)
+
+  const link = document.createElement('a')
+  link.download = `${safeName(fileName)}-ID.png`
+  link.href = combined.toDataURL('image/png', 1.0)
+  link.click()
+}
+
+export async function downloadIdPDF(frontEl, backEl, fileName) {
+  const [frontCanvas, backCanvas] = await Promise.all([capture(frontEl), capture(backEl)])
+  const pdf = createPdfDoc(frontCanvas, backCanvas)
   pdf.save(`${safeName(fileName)}-ID-3.4x5.3in.pdf`)
+}
+
+export async function generateIdPdfBlob(frontEl, backEl, fileName) {
+  const [frontCanvas, backCanvas] = await Promise.all([capture(frontEl), capture(backEl)])
+  const pdf = createPdfDoc(frontCanvas, backCanvas)
+  return pdf.output('blob')
 }

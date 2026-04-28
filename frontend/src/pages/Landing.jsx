@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { employeeLogin } from '../services/auth'
+import { employeeLogin, adminLogin } from '../services/auth'
 import '../pages/Landing.css'
 
 const Landing = () => {
@@ -35,10 +35,21 @@ const Landing = () => {
         setError('Please provide your admin email and password.')
         return
       }
-      // TODO: replace with real admin auth once backend endpoint is live
-      localStorage.setItem('adminToken', 'stub-admin-token')
-      localStorage.setItem('adminName', adminForm.email.split('@')[0] || 'Administrator')
-      navigate('/admin/dashboard')
+      try {
+        setLoading(true)
+        const response = await adminLogin(adminForm.email.trim(), adminForm.password)
+        if (response.success) {
+          localStorage.setItem('adminToken', response.token)
+          localStorage.setItem('adminName', response.user?.name || response.user?.email || 'Administrator')
+          navigate('/admin/dashboard')
+        } else {
+          setError(response?.message || 'Authentication failed.')
+        }
+      } catch (err) {
+        setError(err?.message || 'Authentication failed.')
+      } finally {
+        setLoading(false)
+      }
       return
     }
 

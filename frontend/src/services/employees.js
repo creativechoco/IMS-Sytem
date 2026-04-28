@@ -4,62 +4,110 @@ export async function createEmployee(payload) {
   const formData = new FormData()
   Object.entries(payload).forEach(([key, value]) => {
     if (value === undefined || value === null) return
-    if (key === 'photoPreview') return
+    if (typeof value === 'string' && value.trim() === '') return
+    if (key === 'photoPreview' || key === 'signaturePreview') return
     formData.append(key, value)
   })
 
   const response = await fetch(`${API_BASE_URL}/employees`, {
     method: 'POST',
+    headers: { Accept: 'application/json' },
     body: formData,
   })
 
   if (!response.ok) {
-    let errorPayload
     try {
-      errorPayload = await response.json()
+      const contentType = response.headers.get('content-type') || ''
+      if (contentType.includes('application/json')) {
+        const errorPayload = await response.json()
+        const message = errorPayload?.message || 'Unable to save employee'
+        throw new Error(message)
+      }
+      const text = await response.text()
+      throw new Error(text || 'Unable to connect to the server.')
     } catch (err) {
-      throw new Error('Unable to connect to the server.')
+      throw new Error(err?.message || 'Unable to connect to the server.')
     }
-    const message = errorPayload?.message || 'Unable to save employee'
-    throw new Error(message)
   }
 
   return response.json()
+}
+
+export async function deleteEmployee(id) {
+  const response = await fetch(`${API_BASE_URL}/employees/${id}`, {
+    method: 'DELETE',
+    headers: { Accept: 'application/json' },
+  })
+
+  if (!response.ok) {
+    try {
+      const contentType = response.headers.get('content-type') || ''
+      if (contentType.includes('application/json')) {
+        const errorPayload = await response.json()
+        const message = errorPayload?.message || 'Unable to delete employee'
+        throw new Error(message)
+      }
+      const text = await response.text()
+      throw new Error(text || 'Unable to delete employee')
+    } catch (err) {
+      throw new Error(err?.message || 'Unable to delete employee')
+    }
+  }
+
+  return true
 }
 
 export async function updateEmployee(id, payload) {
   const formData = new FormData()
   Object.entries(payload).forEach(([key, value]) => {
     if (value === undefined || value === null) return
-    if (key === 'photoPreview') return
+    if (typeof value === 'string' && value.trim() === '') return
+    if (key === 'photoPreview' || key === 'signaturePreview') return
     formData.append(key, value)
   })
 
   const response = await fetch(`${API_BASE_URL}/employees/${id}`, {
     method: 'POST',
-    headers: { 'X-HTTP-Method-Override': 'PUT' },
+    headers: { 'X-HTTP-Method-Override': 'PUT', Accept: 'application/json' },
     body: formData,
   })
 
   if (!response.ok) {
-    let errorPayload
     try {
-      errorPayload = await response.json()
+      const contentType = response.headers.get('content-type') || ''
+      if (contentType.includes('application/json')) {
+        const errorPayload = await response.json()
+        const message = errorPayload?.message || 'Unable to update employee'
+        throw new Error(message)
+      }
+      const text = await response.text()
+      throw new Error(text || 'Unable to connect to the server.')
     } catch (err) {
-      throw new Error('Unable to connect to the server.')
+      throw new Error(err?.message || 'Unable to connect to the server.')
     }
-    const message = errorPayload?.message || 'Unable to update employee'
-    throw new Error(message)
   }
 
   return response.json()
 }
 
 export async function getEmployees() {
-  const response = await fetch(`${API_BASE_URL}/employees`)
+  const response = await fetch(`${API_BASE_URL}/employees`, {
+    headers: { Accept: 'application/json' },
+  })
 
   if (!response.ok) {
-    throw new Error('Unable to load employees')
+    try {
+      const contentType = response.headers.get('content-type') || ''
+      if (contentType.includes('application/json')) {
+        const errorPayload = await response.json()
+        const message = errorPayload?.message || 'Unable to load employees'
+        throw new Error(message)
+      }
+      const text = await response.text()
+      throw new Error(text || 'Unable to load employees')
+    } catch (err) {
+      throw new Error(err?.message || 'Unable to load employees')
+    }
   }
 
   return response.json()

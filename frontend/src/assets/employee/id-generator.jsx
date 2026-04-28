@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { IDCardFront, IDCardBack } from '../components/id-preview'
 import { createEmployee } from '../../services/employees'
 import './id-generator.css'
+import Cropper from 'react-easy-crop'
 
 const BLOOD_TYPES = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-']
 
@@ -35,6 +36,10 @@ const defaultForm = {
   /* Photo */
   photo: null,
   photoPreview: null,
+
+  /* Signature */
+  signature: null,
+  signaturePreview: null,
 }
 
 function seedFromLocal() {
@@ -69,6 +74,23 @@ function EmployeeIdGenerator() {
   const [success, setSuccess] = useState('')
   const [errors, setErrors] = useState({})
   const fileRef = useRef(null)
+  const signatureRef = useRef(null)
+
+  /* Photo cropper state */
+  const [cropSrc, setCropSrc] = useState(null)
+  const [cropMeta, setCropMeta] = useState({ fileType: 'image/jpeg', fileName: 'photo.jpg' })
+  const [crop, setCrop] = useState({ x: 0, y: 0 })
+  const [zoom, setZoom] = useState(1)
+  const [croppedAreaPixels, setCroppedAreaPixels] = useState(null)
+  const [cropping, setCropping] = useState(false)
+
+  /* Signature cropper state */
+  const [sigCropSrc, setSigCropSrc] = useState(null)
+  const [sigCropMeta, setSigCropMeta] = useState({ fileType: 'image/png', fileName: 'signature.png' })
+  const [sigCrop, setSigCrop] = useState({ x: 0, y: 0 })
+  const [sigZoom, setSigZoom] = useState(1)
+  const [sigCroppedAreaPixels, setSigCroppedAreaPixels] = useState(null)
+  const [sigCropping, setSigCropping] = useState(false)
 
   useEffect(() => {
     const token = localStorage.getItem('employeeToken')
@@ -83,29 +105,190 @@ function EmployeeIdGenerator() {
   }, [form.first_name, form.last_name])
 
   const handleChange = (field) => (event) => {
-    const value = event.target.value
+    const raw = event.target.value
+    const value = typeof raw === 'string' ? raw.toUpperCase() : raw
     setForm((prev) => ({ ...prev, [field]: value }))
     setErrors((prev) => ({ ...prev, [field]: '' }))
+  }
+
+  const createImage = (url) =>
+    new Promise((resolve, reject) => {
+      const img = new Image()
+      img.onload = () => resolve(img)
+      img.onerror = reject
+      img.src = url
+    })
+
+  const getCroppedImage = async (imageSrc, cropPixels, fileType = 'image/jpeg', size = 192) => {
+    const image = await createImage(imageSrc)
+    const canvas = document.createElement('canvas')
+    const outW = typeof size === 'number' ? size : size?.width || 192
+    const outH = typeof size === 'number' ? size : size?.height || 192
+    canvas.width = outW
+    canvas.height = outH
+    const ctx = canvas.getContext('2d')
+    const { x, y, width, height } = cropPixels
+    ctx.drawImage(image, x, y, width, height, 0, 0, outW, outH)
+
+    return new Promise((resolve, reject) => {
+      canvas.toBlob(
+        (blob) => {
+          if (!blob) return reject(new Error('Unable to crop image'))
+          const reader = new FileReader()
+          reader.onloadend = () => resolve({ blob, dataUrl: reader.result })
+          reader.onerror = reject
+          reader.readAsDataURL(blob)
+        },
+        fileType,
+        0.95,
+      )
+    })
   }
 
   const handlePhoto = (event) => {
     const file = event.target.files?.[0]
     if (!file) return
     const reader = new FileReader()
-    reader.onload = (ev) =>
-      setForm((prev) => ({ ...prev, photo: file, photoPreview: ev.target.result }))
+    reader.onload = (ev) => {
+      setCropSrc(ev.target.result)
+      setCropMeta({ fileType: file.type || 'image/jpeg', fileName: file.name || 'photo.jpg' })
+      setCrop({ x: 0, y: 0 })
+      setZoom(1)
+      setCroppedAreaPixels(null)
+    }
     reader.readAsDataURL(file)
   }
 
   const removePhoto = () => {
     setForm((prev) => ({ ...prev, photo: null, photoPreview: null }))
     if (fileRef.current) fileRef.current.value = ''
+    setCropSrc(null)
+    setCroppedAreaPixels(null)
+  }
+
+  const removeSignatureBackground = async (dataUrl, fileName = 'signature.png') => {
+    const image = await createImage(dataUrl)
+    const canvas = document.createElement('canvas')
+    canvas.width = image.width
+    canvas.height = image.height
+    const ctx = canvas.getContext('2d')
+    ctx.drawImage(image, 0, 0)
+
+    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height)
+    const { data } = imageData
+    const threshold = 245
+    for (let i = 0; i < data.length; i += 4) {
+      const r = data[i]
+      const g = data[i + 1]
+      const b = data[i + 2]
+      if (r > threshold && g > threshold && b > threshold) {
+        data[i + 3] = 0 // make near-white transparent
+      }
+    }
+    ctx.putImageData(imageData, 0, 0)
+
+    return new Promise((resolve, reject) => {
+      canvas.toBlob(
+        (blob) => {
+          if (!blob) return reject(new Error('Unable to process signature'))
+          const safeName = (fileName || 'signature.png').replace(/\.[^.]+$/, '')
+          const cleanedFile = new File([blob], `${safeName}-clean.png`, { type: 'image/png' })
+          const preview = canvas.toDataURL('image/png')
+          resolve({ cleanedFile, preview })
+        },
+        'image/png',
+        1,
+      )
+    })
+  }
+
+  const handleSignature = (event) => {
+    const file = event.target.files?.[0]
+    if (!file) return
+    const reader = new FileReader()
+    reader.onload = (ev) => {
+      setSigCropSrc(ev.target.result)
+      setSigCropMeta({ fileType: file.type || 'image/png', fileName: file.name || 'signature.png' })
+      setSigCrop({ x: 0, y: 0 })
+      setSigZoom(1)
+      setSigCroppedAreaPixels(null)
+      setError('')
+    }
+    reader.readAsDataURL(file)
+  }
+
+  const removeSignature = () => {
+    setForm((prev) => ({ ...prev, signature: null, signaturePreview: null }))
+    if (signatureRef.current) signatureRef.current.value = ''
   }
 
   const handleReset = () => {
     setForm(defaultForm)
     setErrors({})
     if (fileRef.current) fileRef.current.value = ''
+    if (signatureRef.current) signatureRef.current.value = ''
+    setCropSrc(null)
+    setCroppedAreaPixels(null)
+    setSigCropSrc(null)
+    setSigCroppedAreaPixels(null)
+  }
+
+  const onCropComplete = (_, areaPixels) => setCroppedAreaPixels(areaPixels)
+
+  const applyCrop = async () => {
+    if (!cropSrc || !croppedAreaPixels) return
+    try {
+      setCropping(true)
+      const { dataUrl, blob } = await getCroppedImage(cropSrc, croppedAreaPixels, cropMeta.fileType)
+      const fileName = cropMeta.fileName || 'photo.jpg'
+      const croppedFile = new File([blob], fileName, { type: blob.type || cropMeta.fileType })
+
+      setForm((prev) => ({ ...prev, photo: croppedFile, photoPreview: dataUrl }))
+      setCropSrc(null)
+      setCroppedAreaPixels(null)
+      if (fileRef.current) fileRef.current.value = ''
+      setError('')
+    } catch (err) {
+      setError(err?.message || 'Unable to crop image')
+    } finally {
+      setCropping(false)
+    }
+  }
+
+  const cancelCrop = () => {
+    setCropSrc(null)
+    setCroppedAreaPixels(null)
+    if (fileRef.current) fileRef.current.value = ''
+  }
+
+  const onSigCropComplete = (_, areaPixels) => setSigCroppedAreaPixels(areaPixels)
+
+  const applySignatureCrop = async () => {
+    if (!sigCropSrc || !sigCroppedAreaPixels) return
+    try {
+      setSigCropping(true)
+      const { dataUrl } = await getCroppedImage(sigCropSrc, sigCroppedAreaPixels, sigCropMeta.fileType, {
+        width: 600,
+        height: 240,
+      })
+      const { cleanedFile, preview } = await removeSignatureBackground(dataUrl, sigCropMeta.fileName)
+      setForm((prev) => ({ ...prev, signature: cleanedFile, signaturePreview: preview }))
+      setErrors((prev) => ({ ...prev, signature: '' }))
+      setError('')
+      setSigCropSrc(null)
+      setSigCroppedAreaPixels(null)
+      if (signatureRef.current) signatureRef.current.value = ''
+    } catch (err) {
+      setError(err?.message || 'Unable to process signature')
+    } finally {
+      setSigCropping(false)
+    }
+  }
+
+  const cancelSignatureCrop = () => {
+    setSigCropSrc(null)
+    setSigCroppedAreaPixels(null)
+    if (signatureRef.current) signatureRef.current.value = ''
   }
 
   const handleSave = () => {
@@ -117,7 +300,6 @@ function EmployeeIdGenerator() {
       'department',
       'home_address',
       'contact_number',
-      'blood_type',
       'date_of_birth',
       'sss_number',
       'pagibig_number',
@@ -131,6 +313,9 @@ function EmployeeIdGenerator() {
     const missing = requiredFields.filter((field) => !form[field]?.toString().trim())
     if (!form.photo) {
       missing.push('photo')
+    }
+    if (!form.signature) {
+      missing.push('signature')
     }
 
     if (missing.length) {
@@ -424,9 +609,52 @@ function EmployeeIdGenerator() {
             </div>
           </div>
 
+          {/* ── Signature Upload ── */}
+          <div className="form-section">
+            <div className="section-header">Signature</div>
+            <div className="signature-upload">
+              <div
+                className={`signature-upload-area ${errors.signature ? 'has-error' : ''}`}
+                onClick={() => !form.signaturePreview && signatureRef.current?.click()}
+                role="button"
+                tabIndex={0}
+              >
+                {form.signaturePreview ? (
+                  <div className="signature-preview-box">
+                    <img src={form.signaturePreview} alt="Signature preview" />
+                    <button
+                      type="button"
+                      className="remove-photo-btn"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        removeSignature()
+                      }}
+                      aria-label="Remove signature"
+                    >
+                      ×
+                    </button>
+                  </div>
+                ) : (
+                  <div className="photo-placeholder">
+                    <span className="upload-glyph">✍</span>
+                    <span>Upload signature</span>
+                    <span className="photo-hint">PNG/JPG, light background</span>
+                  </div>
+                )}
+              </div>
+              <input
+                ref={signatureRef}
+                type="file"
+                accept="image/*"
+                style={{ display: 'none' }}
+                onChange={handleSignature}
+              />
+            </div>
+          </div>
+
           <div className="form-actions">
             <button type="button" className="ghost" onClick={() => navigate('/', { replace: true })}>
-              Return to landing
+              Return to landing page
             </button>
             <div className="action-group">
               <button type="button" className="ghost" onClick={handleReset}>
@@ -475,6 +703,94 @@ function EmployeeIdGenerator() {
           </div>
         </section>
       </main>
+
+      {cropSrc && (
+        <div className="cropper-overlay" role="dialog" aria-modal="true">
+          <div className="cropper-dialog">
+            <h3>Adjust photo (2×2)</h3>
+            <p className="cropper-hint">Drag to position your face in the square. Use zoom to fill the frame without cropping too tight.</p>
+            <div className="cropper-stage">
+              <Cropper
+                image={cropSrc}
+                crop={crop}
+                zoom={zoom}
+                aspect={1}
+                minZoom={1}
+                maxZoom={3}
+                cropShape="rect"
+                onCropChange={setCrop}
+                onZoomChange={setZoom}
+                onCropComplete={onCropComplete}
+              />
+            </div>
+            <div className="cropper-controls">
+              <label>
+                Zoom
+                <input
+                  type="range"
+                  min="1"
+                  max="3"
+                  step="0.05"
+                  value={zoom}
+                  onChange={(e) => setZoom(Number(e.target.value))}
+                />
+              </label>
+            </div>
+            <div className="cropper-actions">
+              <button type="button" className="ghost" onClick={cancelCrop} disabled={cropping}>
+                Cancel
+              </button>
+              <button type="button" className="primary" onClick={applyCrop} disabled={cropping}>
+                {cropping ? 'Cropping…' : 'Save crop'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {sigCropSrc && (
+        <div className="cropper-overlay" role="dialog" aria-modal="true">
+          <div className="cropper-dialog">
+            <h3>Adjust signature</h3>
+            <p className="cropper-hint">Drag to center your signature. Use zoom to fit it comfortably within the box.</p>
+            <div className="cropper-stage">
+              <Cropper
+                image={sigCropSrc}
+                crop={sigCrop}
+                zoom={sigZoom}
+                aspect={2.5}
+                minZoom={0.5}
+                maxZoom={5}
+                cropShape="rect"
+                onCropChange={setSigCrop}
+                onZoomChange={setSigZoom}
+                onCropComplete={onSigCropComplete}
+              />
+            </div>
+            <div className="cropper-controls">
+              <label>
+                Zoom
+                <input
+                  type="range"
+                  min="0.5"
+                  max="5"
+                  step="0.05"
+                  value={sigZoom}
+                  onChange={(e) => setSigZoom(Number(e.target.value))}
+                />
+              </label>
+            </div>
+            <div className="cropper-actions">
+              <button type="button" className="ghost" onClick={cancelSignatureCrop} disabled={sigCropping}>
+                Cancel
+              </button>
+              <button type="button" className="primary" onClick={applySignatureCrop} disabled={sigCropping}>
+                {sigCropping ? 'Cropping…' : 'Save crop'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
