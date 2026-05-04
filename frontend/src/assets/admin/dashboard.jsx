@@ -70,7 +70,7 @@ function AdminDashboard() {
   const getEmployeeKey = (emp, idx) => emp?.id ?? emp?.id_number ?? idx
 
   const makeFileName = (emp) => {
-    const name = [emp?.first_name, emp?.middle_name, emp?.last_name].filter(Boolean).join(' ').trim() || 'Employee'
+    const name = [emp?.first_name, emp?.name_initial, emp?.last_name].filter(Boolean).join(' ').trim() || 'Employee'
     const idPart = emp?.id_number || 'ID'
     const clean = (val) => val.replace(/\s+/g, '_')
     return `${clean(name)} - ${clean(idPart)}`

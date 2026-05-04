@@ -117,7 +117,7 @@ const Logo = ({ src, size = 70 }) => {
    ═════════════════════════════════════════════ */
 export const IDCardFront = forwardRef(function IDCardFront({ data = {}, companyLogo }, ref) {
   const firstName = data.first_name || 'FIRSTNAME'
-  const middleInit = data.middle_name ? data.middle_name[0].toUpperCase() + '.' : 'P.'
+  const middleInit = data.name_initial ? data.name_initial.toUpperCase() + '.' : 'P.'
   const lastName = (data.last_name || 'LASTNAME').toUpperCase()
   const nameLine1 = `${firstName.toUpperCase()} ${middleInit}`
   const idNumber = data.id_number || ''
@@ -194,8 +194,8 @@ export const IDCardFront = forwardRef(function IDCardFront({ data = {}, companyL
               fontSize: '7.5px',
               color: '#444',
               marginTop: '0px',
-              lineHeight: 1.55,
               fontFamily: 'Calibri,sans-serif',
+              lineHeight: 1.1,
             }}
           >
             Prime Regional Government Center, Carpenter Hill, Koronadal City
@@ -354,7 +354,7 @@ export const IDCardBack = forwardRef(function IDCardBack({ data = {} }, ref) {
           fontWeight: 800,
           color: '#111',
           fontFamily: 'Calibri,sans-serif',
-          minWidth: '108px',
+          minWidth: '140px',
           flexShrink: 0,
         }}
       >
@@ -362,10 +362,11 @@ export const IDCardBack = forwardRef(function IDCardBack({ data = {} }, ref) {
       </span>
       <span
         style={{
-          fontSize: '11.5px',
+          fontSize: '12.5px',
           color: '#222',
           fontFamily: 'Calibri,sans-serif',
           flex: 1,
+          fontWeight: 800,
           minHeight: '13px',
           paddingBottom: '1px',
         }}
@@ -410,7 +411,6 @@ export const IDCardBack = forwardRef(function IDCardBack({ data = {} }, ref) {
             fontWeight: 900,
             color: '#1a6b2a',
             letterSpacing: '0.07em',
-            marginBottom: '4px',
             fontFamily: 'Calibri,sans-serif',
           }}
         >
@@ -419,11 +419,9 @@ export const IDCardBack = forwardRef(function IDCardBack({ data = {} }, ref) {
         <div
           style={{
             minHeight: '13px',
-            marginBottom: '3px',
             fontSize: '11.5px',
             color: '#222',
             fontFamily: 'Calibri,sans-serif',
-            paddingBottom: '1px',
             lineHeight: 1.4,
           }}
         >
@@ -436,7 +434,7 @@ export const IDCardBack = forwardRef(function IDCardBack({ data = {} }, ref) {
         style={{
           position: 'relative',
           zIndex: 2,
-          margin: '30px 18px 0 18px',
+          margin: '25px 18px 0 18px',
           border: '1.5px solid #d4a017',
           borderRadius: '2px',
           padding: '10px 12px 8px 12px',
@@ -445,7 +443,6 @@ export const IDCardBack = forwardRef(function IDCardBack({ data = {} }, ref) {
       >
         <Row label="CONTACT NUMBER:" value={data.contact_number} />
         <Row label="DATE OF BIRTH:" value={data.date_of_birth} />
-        <div style={{ margin: '4px 0 5px 0' }} />
         <Row label="SSS No.:" value={data.sss_number} />
         <Row label="PHILHEALTH No.:" value={data.philhealth_number} />
         <Row label="PAG-IBIG No.:" value={data.pagibig_number} />
@@ -468,7 +465,6 @@ export const IDCardBack = forwardRef(function IDCardBack({ data = {} }, ref) {
         <div
           style={{
             minHeight: '13px',
-            marginBottom: '5px',
             fontSize: '10px',
             color: '#222',
             fontFamily: 'Calibri,sans-serif',
@@ -484,15 +480,30 @@ export const IDCardBack = forwardRef(function IDCardBack({ data = {} }, ref) {
         <div
           style={{
             minHeight: '13px',
-            marginBottom: '2px',
+            marginBottom: '1px',
             fontSize: '9.5px',
             color: '#222',
             fontFamily: 'Calibri,sans-serif',
-            paddingBottom: '1px',
             textAlign: 'center',
           }}
         >
           {data.emergency_contact || ''}
+        </div>
+        <div
+          style={{
+            minHeight: '13px',
+            marginBottom: '2px',
+            fontSize: '10.5px',
+            color: '#222',
+            fontFamily: 'Calibri,sans-serif',
+            paddingBottom: '1px',
+            textAlign: 'center',
+            wordBreak: 'break-word',
+            overflowWrap: 'break-word',
+            whiteSpace: 'normal',
+          }}
+        >
+          {data.emergency_address || ''}
         </div>
       </div>
 
@@ -517,7 +528,7 @@ export const IDCardBack = forwardRef(function IDCardBack({ data = {} }, ref) {
       </div>
 
       {/* DIRECTOR */}
-      <div style={{ position: 'relative', zIndex: 2, textAlign: 'center', marginTop: '40px' }}>
+      <div style={{ position: 'absolute', bottom: '31px', left: 0, right: 0, zIndex: 2, textAlign: 'center' }}>
         <div style={{ marginBottom: '-24px' }}>
           <img
             src="/Director_signature.png"

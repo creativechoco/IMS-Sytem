@@ -132,13 +132,14 @@ function AddEmployeeForm({
             />
           </label>
           <label>
-            <span>Middle Name*</span>
+            <span>Middle Initial</span>
             <input
               type="text"
-              placeholder="Santos"
-              value={data.middle_name}
-              onChange={onChange('middle_name')}
-              className={cls('middle_name')}
+              placeholder="M"
+              maxLength={1}
+              value={data.name_initial}
+              onChange={onChange('name_initial')}
+              className={cls('name_initial')}
             />
           </label>
           <label>
@@ -305,7 +306,7 @@ function AddEmployeeForm({
               className={cls('emergency_contact')}
             />
           </label>
-          <label className="full">
+          <label>
             <span>Relationship*</span>
             <input
               type="text"
@@ -313,6 +314,16 @@ function AddEmployeeForm({
               value={data.emergency_relationship}
               onChange={onChange('emergency_relationship')}
               className={cls('emergency_relationship')}
+            />
+          </label>
+          <label className="full">
+            <span>Address</span>
+            <input
+              type="text"
+              placeholder="Emergency contact address"
+              value={data.emergency_address}
+              onChange={onChange('emergency_address')}
+              className={cls('emergency_address')}
             />
           </label>
         </div>
@@ -364,7 +375,7 @@ function AddEmployeeForm({
 export const REQUIRED_FIELDS = [
   'id_number',
   'first_name',
-  'middle_name',
+  'name_initial',
   'last_name',
   'position',
   'department',
@@ -378,13 +389,14 @@ export const REQUIRED_FIELDS = [
   'emergency_name',
   'emergency_contact',
   'emergency_relationship',
+  'emergency_address',
   'signature',
 ]
 
 export const EMPTY_EMPLOYEE = {
   id_number: '',
   first_name: '',
-  middle_name: '',
+  name_initial: '',
   last_name: '',
   position: '',
   department: '',
@@ -399,6 +411,7 @@ export const EMPTY_EMPLOYEE = {
   emergency_name: '',
   emergency_contact: '',
   emergency_relationship: '',
+  emergency_address: '',
   status: 'active',
   photo: null,
   photoPreview: null,

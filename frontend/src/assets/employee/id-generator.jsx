@@ -13,7 +13,7 @@ const defaultForm = {
   /* Identity */
   id_number: '',
   first_name: '',
-  middle_name: '',
+  name_initial: '',
   last_name: '',
   position: '',
   department: '',
@@ -34,6 +34,7 @@ const defaultForm = {
   emergency_name: '',
   emergency_contact: '',
   emergency_relationship: '',
+  emergency_address: '',
 
   /* Photo */
   photo: null,
@@ -63,16 +64,26 @@ function seedFromLocal() {
   const stored = localStorage.getItem('employeeName') || ''
   if (!stored) return defaultForm
 
-  /* Expected formats: "LASTNAME, FIRST M." or "First Last" */
+  /* Expected formats: "LASTNAME, FIRSTNAME(S) M." or "First Last" */
   const parts = stored.split(',').map((s) => s.trim())
   if (parts.length === 2) {
     const [last, rest] = parts
     const tokens = rest.split(/\s+/).filter(Boolean)
+    // Last token ending with '.' is the initial; everything before is first name(s)
+    let initial = ''
+    let firstName = rest
+    if (tokens.length >= 2) {
+      const lastToken = tokens[tokens.length - 1]
+      if (lastToken.endsWith('.')) {
+        initial = lastToken.replace('.', '')
+        firstName = tokens.slice(0, -1).join(' ')
+      }
+    }
     return {
       ...defaultForm,
       last_name: last,
-      first_name: tokens[0] || '',
-      middle_name: tokens[1]?.replace('.', '') || '',
+      first_name: firstName,
+      name_initial: initial,
     }
   }
   const tokens = stored.split(/\s+/).filter(Boolean)
@@ -337,6 +348,7 @@ function EmployeeIdGenerator() {
       'emergency_name',
       'emergency_contact',
       'emergency_relationship',
+      'emergency_address',
     ]
 
     const missing = requiredFields.filter((field) => !form[field]?.toString().trim())
@@ -476,12 +488,13 @@ function EmployeeIdGenerator() {
                 />
               </label>
               <label>
-                <span>Middle Name</span>
+                <span>Middle Initial</span>
                 <input
                   type="text"
-                  placeholder="Santos"
-                  value={form.middle_name}
-                  onChange={handleChange('middle_name')}
+                  placeholder="M"
+                  maxLength={1}
+                  value={form.name_initial}
+                  onChange={handleChange('name_initial')}
                 />
               </label>
               <label>
@@ -648,7 +661,7 @@ function EmployeeIdGenerator() {
                   className={errors.emergency_contact ? 'has-error' : ''}
                 />
               </label>
-              <label className="full">
+              <label>
                 <span>Relationship</span>
                 <input
                   type="text"
@@ -656,6 +669,16 @@ function EmployeeIdGenerator() {
                   value={form.emergency_relationship}
                   onChange={handleChange('emergency_relationship')}
                   className={errors.emergency_relationship ? 'has-error' : ''}
+                />
+              </label>
+              <label className="full">
+                <span>Address</span>
+                <input
+                  type="text"
+                  placeholder="Emergency contact address"
+                  value={form.emergency_address}
+                  onChange={handleChange('emergency_address')}
+                  className={errors.emergency_address ? 'has-error' : ''}
                 />
               </label>
             </div>

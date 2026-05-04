@@ -102,7 +102,7 @@ const Landing = () => {
                 <img src="/bfar-logo.png" alt="BFAR XII" loading="lazy" decoding="async" />
               </div>
               <h1 className="modal-title">Welcome!</h1>
-              <p className="modal-sub">BFAR 12-IMS · Identity Management System</p>
+              <p className="modal-sub">BFAR XII-IMS · Identity Management System</p>
             </div>
 
             <div className="tab-bar">

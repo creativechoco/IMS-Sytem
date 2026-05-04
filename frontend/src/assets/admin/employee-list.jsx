@@ -23,7 +23,7 @@ function EmployeeList({
     const q = search.trim().toLowerCase()
     const list = employees.map((emp) => ({
       ...emp,
-      _fullName: [emp.first_name, emp.middle_name ? `${emp.middle_name[0]}.` : '', emp.last_name]
+      _fullName: [emp.first_name, emp.name_initial ? `${emp.name_initial}.` : '', emp.last_name]
         .filter(Boolean)
         .join(' ')
         .trim(),
@@ -34,7 +34,7 @@ function EmployeeList({
       : list.filter((emp) => {
           const haystack = [
             emp.first_name,
-            emp.middle_name,
+            emp.name_initial,
             emp.last_name,
             emp.id_number,
             emp.position,
@@ -151,7 +151,7 @@ function EmployeeList({
                   const photoSrc = emp.photoPreview || emp.photo_url
                   const fullName = [
                     emp.first_name,
-                    emp.middle_name ? `${emp.middle_name[0]}.` : '',
+                    emp.name_initial ? `${emp.name_initial}.` : '',
                     emp.last_name,
                   ]
                     .filter(Boolean)
@@ -229,7 +229,7 @@ function EmployeeList({
             <p style={{ margin: '0 0 12px 0', color: '#444', lineHeight: 1.5 }}>
               Are you sure you want to delete{' '}
               <strong>
-                {[confirmingEmp.first_name, confirmingEmp.middle_name, confirmingEmp.last_name]
+                {[confirmingEmp.first_name, confirmingEmp.name_initial, confirmingEmp.last_name]
                   .filter(Boolean)
                   .join(' ') || 'this employee'}
               </strong>

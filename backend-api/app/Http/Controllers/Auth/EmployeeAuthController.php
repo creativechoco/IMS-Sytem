@@ -48,9 +48,9 @@ class EmployeeAuthController extends Controller
 
     private function normalizeName(string $name): string
     {
-        $ascii = Str::of($name)->ascii()->lower();
-        $clean = preg_replace('/[^a-z0-9]+/i', ' ', $ascii);
-        return trim(preg_replace('/\s+/', ' ', $clean));
+        // Match MySQL: REGEXP_REPLACE(full_name, "[^A-Za-z0-9 ]", "")
+        $clean = preg_replace('/[^A-Za-z0-9 ]+/u', '', $name);
+        return trim(strtolower($clean));
     }
 
     private function findEmployeeByName(string $normalizedName): ?array
@@ -58,13 +58,10 @@ class EmployeeAuthController extends Controller
         $employees = DB::table('employees')->get();
 
         $match = $employees->first(function ($emp) use ($normalizedName) {
-            $full = implode(' ', array_filter([
-                $emp->last_name,
-                $emp->first_name,
-                $emp->middle_name,
-            ]));
-
-            return $this->normalizeName($full) === $normalizedName;
+            $variants = $this->nameVariants($emp->first_name, $emp->name_initial, $emp->last_name);
+            return collect($variants)
+                ->map(fn ($v) => $this->normalizeName($v))
+                ->contains($normalizedName);
         });
 
         if (! $match) {
@@ -75,7 +72,7 @@ class EmployeeAuthController extends Controller
             'id' => $match->id,
             'id_number' => $match->id_number,
             'first_name' => $match->first_name,
-            'middle_name' => $match->middle_name,
+            'name_initial' => $match->name_initial,
             'last_name' => $match->last_name,
             'position' => $match->position,
             'department' => $match->department,
@@ -90,9 +87,24 @@ class EmployeeAuthController extends Controller
             'emergency_name' => $match->emergency_name,
             'emergency_contact' => $match->emergency_contact,
             'emergency_relationship' => $match->emergency_relationship,
+            'emergency_address' => $match->emergency_address,
             'photo_url' => $this->proxyMediaUrl($match->photo_url),
             'signature_url' => $this->proxyMediaUrl($match->signature_url),
         ];
+    }
+
+    private function nameVariants(?string $first, ?string $initial, ?string $last): array
+    {
+        $first = trim((string) $first);
+        $initial = trim((string) $initial);
+        $last = trim((string) $last);
+
+        return array_filter([
+            "$last $first $initial",
+            "$last $first",
+            "$first $initial $last",
+            "$first $last",
+        ], fn ($v) => trim($v) !== '');
     }
 
     private function proxyMediaUrl(?string $url): ?string

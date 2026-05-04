@@ -12,7 +12,7 @@ class Employee extends Model
     protected $fillable = [
         'id_number',
         'first_name',
-        'middle_name',
+        'name_initial',
         'last_name',
         'position',
         'department',
@@ -28,6 +28,7 @@ class Employee extends Model
         'emergency_name',
         'emergency_contact',
         'emergency_relationship',
+        'emergency_address',
         'status',
         'signature_url',
         'created_by',
